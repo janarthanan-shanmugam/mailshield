@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mailshield (0.1.1)
+    mailshield (1.1)
 
 GEM
   remote: https://rubygems.org/
@@ -17,4 +17,4 @@ DEPENDENCIES
   rake (~> 13.0)
 
 BUNDLED WITH
-   2.5.11
+   2.5.18

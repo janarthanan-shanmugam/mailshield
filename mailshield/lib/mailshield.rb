@@ -1,133 +1,88 @@
 # frozen_string_literal: true
 
-require_relative "mailshield/version"
+require_relative 'mailshield/version'
 require 'resolv'
 require 'csv'
+require 'net/smtp'
 
 module MailShield
+  EMAIL_REGEX = /\A[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\z/.freeze
 
-  class ValidationResult
-    attr_reader :emails
-
-    def initialize(emails)
-      @emails = emails
-    end
-
-    def valid_emails
-      emails.select { |email| email[:valid] }.map { |email| email[:email] }
-    end
-
-    def invalid_emails
-      emails.reject { |email| email[:valid] }.map { |email| email[:email] }
-    end
-
-    def get_emails
-      emails.map { |email| { email: email[:email], valid: email[:valid] } }
-    end
-  end
+  class ValidationError < StandardError; end
+  class InvalidFormatError < ValidationError; end
+  class DomainNotFoundError < ValidationError; end
+  class SPFError < ValidationError; end
+  class DMARCError < ValidationError; end
+  class SMTPError < ValidationError; end
 
   class << self
-    TEMP_DOMAINS = %w[mailinator.com tempmail.com guerrillamail.com].freeze # Known temporary domains
+    attr_accessor :dns_cache, :smtp_cache
 
-
-    # Main method to validate an email and return results in a hash
-    def validate_email(email)
-      result = {
-        email: email,
-        valid: true,
-        issues: []
-      }
-
-      unless valid_email_format?(email)
-        result[:valid] = false
-        result[:issues] << "The email address format is invalid."
-        return result
-      end
+    def validate_email(email, verify_by_send: false)
+      reset_caches
 
       domain = extract_domain(email)
 
-      if known_temp_domain?(domain)
-        result[:valid] = false
-        result[:issues] << "The email domain is known to be temporary or disposable."
-        return result
+      begin
+        validate_format!(email)
+        validate_domain!(domain)
+        validate_spf!(domain)
+        validate_dmarc!(domain)
+        validate_smtp!(email) if verify_by_send
+      rescue ValidationError => e
+        return { valid: false, issues: [e.message] }
       end
 
-      mx_records = fetch_mx_records(domain)
-      if mx_records.empty?
-        result[:valid] = false
-        result[:issues] << "The email domain does not have valid mail exchange records."
-        return result
-      elsif suspicious_mx_records?(mx_records)
-        result[:valid] = false
-        result[:issues] << "The email domain's mail exchange records suggest it might be used for temporary or disposable email services."
-        return result
-      end
-
-      unless spf_record?(domain)
-        result[:valid] = false
-        result[:issues] << "The email domain is missing important records that help confirm its authenticity."
-        return result
-      end
-
-      unless dmarc_record?(domain)
-        result[:valid] = false
-        result[:issues] << "The email domain is missing records that help protect against email fraud."
-        return result
-      end
-
-      result
+      { valid: true, issues: [] }
     end
 
-    def validate_emails_from_csv(input_file_path)
-      email_results = []
 
-      CSV.foreach(input_file_path, headers: true) do |row|
-        email = row['email']
-        validation_result = validate_email_for_csv(email)
-        email_results << { email: email, valid: validation_result }
-      end
-
-      ValidationResult.new(email_results)
+    def verify_address(email)
+      smtp_verify_email(email)
     end
-
-    def validate_email_for_csv(email)
-      return false unless valid_email_format?(email)
-      domain = extract_domain(email)
-
-      return false if known_temp_domain?(domain)
-      return false unless spf_record?(domain)
-      return false unless dmarc_record?(domain)
-
-      true
-    end
-
     private
+
+    def reset_caches
+      @dns_cache = {}
+      @smtp_cache = {}
+    end
+
+    def validate_format!(email)
+      raise InvalidFormatError, 'The email address format is invalid.' unless valid_email_format?(email)
+    end
+
+    def validate_domain!(domain)
+      raise DomainNotFoundError, 'Email Not Found.' if fetch_mx_records(domain).empty?
+    end
+
+    def validate_spf!(domain)
+      raise SPFError, 'Temporary / Disposable Email' unless spf_record?(domain)
+    end
+
+    def validate_dmarc!(domain)
+      raise DMARCError, 'Temporary / Disposable Email' unless dmarc_record?(domain)
+    end
+
+    def validate_smtp!(email)
+      raise SMTPError, 'Email Address Not Found' unless smtp_verify_email(email)
+    end
 
     def extract_domain(email)
       email.split('@').last.downcase
     end
 
     def valid_email_format?(email)
-      email_regex = /\A[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\z/
-      !!(email =~ email_regex)
-    end
-
-    def known_temp_domain?(domain)
-      TEMP_DOMAINS.include?(domain)
+      EMAIL_REGEX.match?(email)
     end
 
     def fetch_mx_records(domain)
-      Resolv::DNS.open do |dns|
-        mx_records = dns.getresources(domain, Resolv::DNS::Resource::IN::MX)
-        mx_records.map(&:exchange).map(&:to_s)
+      dns_cache[domain] ||= begin
+        Resolv::DNS.open do |dns|
+          dns.getresources(domain, Resolv::DNS::Resource::IN::MX).map(&:exchange).map(&:to_s)
+        end
+      rescue Resolv::ResolvError
+        []
       end
-    rescue Resolv::ResolvError
-      []
-    end
-
-    def suspicious_mx_records?(mx_records)
-      suspicious_patterns = [/mailinator/, /tempmail/, /guerrillamail/]
-      mx_records.any? { |mx| suspicious_patterns.any? { |pattern| mx.match?(pattern) } }
     end
 
     def spf_record?(domain)
@@ -141,27 +96,36 @@ module MailShield
     end
 
     def fetch_txt_records(domain)
-      Resolv::DNS.open do |dns|
-        records = dns.getresources(domain, Resolv::DNS::Resource::IN::TXT)
-        records.map(&:data)
+      dns_cache[domain] ||= begin
+        Resolv::DNS.open do |dns|
+          dns.getresources(domain, Resolv::DNS::Resource::IN::TXT).map(&:data)
+        end
+      rescue Resolv::ResolvError
+        []
       end
-    rescue Resolv::ResolvError
-      []
+    end
+
+    def smtp_verify_email(email)
+      domain = extract_domain(email)
+      smtp_server = smtp_cache[domain] ||= get_smtp_server(domain)
+
+      return false unless smtp_server
+
+      begin
+        Net::SMTP.start(smtp_server, 25, 'localhost') do |smtp|
+          smtp.helo('localhost')
+          smtp.mailfrom('test@example.com')
+          response = smtp.rcptto(email)
+          response == '250 OK'
+        end
+      rescue Net::SMTPFatalError, Net::SMTPServerBusy, Net::SMTPSyntaxError, Errno::ECONNREFUSED => e
+        false
+      end
+    end
+
+    def get_smtp_server(domain)
+      mx_records = fetch_mx_records(domain)
+      mx_records.first
     end
   end
 end
-
-
-# SPF Record Explanation:
-#
-# SPF (Sender Policy Framework): A mechanism that helps email servers verify that an email claiming to come from a specific domain is actually sent by an authorized mail server. 
-# This prevents spammers from sending messages with forged "From" addresses.
-#
-# DMARC Record Explanation:
-#
-# DMARC (Domain-based Message Authentication, Reporting, and Conformance): A protocol that builds on SPF and DKIM (DomainKeys Identified Mail) to help email domain owners protect their domain from being used in email spoofing. 
-# It provides a way for domain owners to publish policies about their email authentication practices and how receiving mail servers should enforce them.
-#
-# References:
-# https://www.dkim.org/
-# https://www.cloudflare.com/en-gb/learning/dns/dns-records/dns-spf-record/
