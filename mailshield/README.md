@@ -1,6 +1,15 @@
 # MailShield
+![Logo](docs/mailshield.png)
 
-**MailShield** is a Ruby gem designed to help you identify and validate email domains. It detects temporary, disposable email domains, verifies proper DNS records (SPF, DKIM, DMARC), and ensures email format validity. This gem is particularly useful for securing your application by filtering out invalid or suspicious email addresses.
+## Description
+
+MailShield is a powerful and flexible email validation gem for Ruby on Rails, designed to protect your applications from disposable, temporary, and invalid email addresses. It leverages DNS record checks (MX, SPF, DMARC) and optional SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
+
+
+Ensure the authenticity and security of email addresses in your Ruby on Rails applications with MailShield. 
+This comprehensive gem offers advanced email validation through DNS record checks (MX, SPF, DMARC) and optional SMTP verification.
+MailShield helps prevent the use of disposable and fake email addresses, safeguarding your platform from spam and enhancing data quality.
+Ideal for developers seeking to strengthen email verification in their applications.
 
 ## Installation
 
@@ -26,7 +35,19 @@ gem install mailshield
 
 
 ## Usage
-### Basic Email Validation
+
+###  Model Integration
+With MailShield, you can easily add email validation to your Rails models using the secure_email validator. Simply include it in your model like this:
+
+```ruby
+
+# app/models/user.rb
+class User < ApplicationRecord
+  validates :email, secure_email: true
+end
+```
+
+### Email Validation Features
 You can validate whether an email domain is legitimate, temporary, or suspicious with a single method:
 
 
@@ -37,73 +58,33 @@ puts result[:issues]         # => reason for the email to be a temprorary or sca
 
 
 ```
+The verify_by_send: true option in the MailShield gem enables a feature that performs additional verification of the email address using the SMTP protocol. Here’s a detailed explanation:
 
-### CSV Email Validation
-If you have a list of email domains in a CSV file, you can validate them and get a report:
 
 ```ruby 
 
-result = MailShield.validate_csv('path/to/emails.csv')
-
-puts result.emails           # => List of all emails with their validation status
-puts result.valid_emails     # => List of valid emails
-puts result.invalid_emails   # => List of invalid emails
+result = MailShield.validate_email('example@example.com', verify_by_send: true)
 
 
 ```
 
-### Example CSV Output
-Here’s what you can expect in the CSV output:
 
-```ruby
-Email, Valid
-user@example.com, true
-fake@mailinator.com, false
+### What is verify_by_send: true?
+When you set verify_by_send: true, the MailShield gem will attempt to connect to the email domain’s mail server using SMTP (Simple Mail Transfer Protocol) to further verify the validity of the email address. This process does not send an actual email but checks if the mail server would accept the email address.
 
-```
+default to false -> refers this validaiton wont be occured.
 
-### Methods Overview
+### also you can perform the specific validation aswell
+if MailShield.verify_address('example@example.com')
+  puts 'Email address is valid and accepted by the mail server.'
+else
+  puts 'Email address is invalid or not accepted by the mail server.'
+end
 
-MailShield.validate_email(email)
-
-Returns a hash with the validation status and any issues found.
-
-MailShield.validate_csv(csv_path)
-* Returns an object containing methods to access:
-   * * ll emails with their validation status.
-   * * Valid emails only.
-   * * Invalid emails only.
+which directly verify whether such email address is present or not.
 
 
-### Email Validation Checks
-Temporary Email Detection:
-
-Checks against a known list of temporary email domains.
-Inspects MX records for suspicious patterns.
-DNS Record Verification:
-
-SPF Record: Verifies if the domain has a Sender Policy Framework (SPF) record.
-DMARC Record: Checks for the presence of a DMARC record.
-DKIM Record: Ensures that the domain is configured with DomainKeys Identified Mail (DKIM).
-Email Format Validation:
-
-Ensures the email address follows standard format conventions.
-Example Validation Process
-For example, if you validate user@mailinator.com, MailShield will:
-
-Detect that mailinator.com is a known temporary domain.
-Check the MX records for suspicious patterns.
-Verify the presence of SPF and DMARC records.
-Validate the email format.
-
-```ruby
-{
-  valid: false,
-  issues: ["The domain is associated with a temporary email provider."]
-}
-```
-
-We welcome contributions to the list of known temporary domains or any other improvements to the gem. Feel free to open an issue or submit a pull request on GitHub.
+Feel free to open an issue or submit a pull request on GitHub.
 
 ### License
 This gem is available as open-source under the terms of the MIT License.
