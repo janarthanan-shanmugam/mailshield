@@ -1,7 +1,10 @@
-# MailShield
-<img src="https://github.com/janarthanan-shanmugam/mailshield/blob/main/mailshield/lib/mailshield/docs/mailshield.png" alt="Description" width="300" style="border-radius: 52% !important;">
+<h1 align="center">  MailShield </h1> 
 
-(An Advanced protective gem for securing your application from Spam, Disposal, Temporary Emails" and validate the legitimacy of the emails.)
+<p align="center">
+<img src="https://github.com/janarthanan-shanmugam/mailshield/blob/main/mailshield/lib/mailshield/docs/mailshield.png" alt="Description" width="300" style="border-radius: 52% !important;">
+</p>
+
+(An Advanced protective gem for securing your application from Spam, Disposal, Temporary Emails and validate the legitimacy of the emails.)
 
 ## Description
 
