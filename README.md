@@ -64,11 +64,15 @@ You can validate whether an email domain is legitimate, temporary, or suspicious
 ```ruby 
 result = MailShield.validate_email('user@example.com')
 puts result[:valid]          # => true or false
-puts result[:issues]         # => reason for the email to be a temprorary or scam email 
+puts result[:reason]         # => if valid false, then reason.
 
 
 ```
-The verify_by_send: true option in the MailShield gem enables a feature that performs additional verification of the email address using the SMTP protocol. Here’s a detailed explanation:
+**OPTIONAL PARAMETER: **
+
+The **verify_by_send**: **true** option in the MailShield gem enables a feature that performs additional verification of the email address using the SMTP protocol. 
+This is to verify even if the domain is legitimate, and we are not sure that the provided email address is present or there is no such email address.
+Here’s a detailed explanation:
 
 
 ```ruby 
@@ -84,17 +88,20 @@ When you set verify_by_send: true, the MailShield gem will attempt to connect to
 
 This process does not send an actual email but checks if the mail server would accept the email address.
 
-default to false -> refers this validaiton wont be occured.
+Default to **false** -> refers this particular validaiton wont be occured.
 
 
-### also you can perform the specific validation aswell
+### also you can perform this specific validation alone by using verify_address method.
+```ruby 
 
-if MailShield.verify_address('example@example.com')
-  returns true if the email is not spam and it is a legitiamate email 
-else
-  return false if the email found to be a spam or non legitimate emails
-end
+ MailShield.verify_address('example@example.com')
 
+RESULT:
+true
+false
+  
+```
+this will verify whether that particular email address is exists or not.
 
 ------------------------------------------------------------------------------------------
 
@@ -103,7 +110,4 @@ Feel free to open an issue or submit a pull request on GitHub.
 ### License
 This gem is available as open-source under the terms of the MIT License.
 
-References
-SPF: Introduction
-DKIM Overview
-DMARC Overview
+#### For any queries or clarification, Contact @shanmugamjanarthan24@gmail.com (JANSHA)
