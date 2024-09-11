@@ -8,16 +8,14 @@
 
 ## Description
 
-MailShield is a powerful and flexible email validation gem for Ruby on Rails, designed to protect your applications from disposable, temporary, and invalid email addresses. 
+MailShield is a powerful and flexible email validation gem for Ruby on Rails, designed to protect your applications from **Disposable**, **Temporary**, **fake** 
+and **non existance** email addresses. 
 
-It leverages DNS record checks (MX, SPF, DMARC) and optional SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
+It performs DNS record checks along with SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
 
 
-Ensure the authenticity and security of email addresses in your Ruby on Rails applications with MailShield. 
+**Ensure the authenticity and security of email addresses in your Ruby on Rails applications with MailShield.**
 
-This comprehensive gem offers advanced email validation through DNS record checks (MX, SPF, DMARC) and optional SMTP verification.
-MailShield helps prevent the use of disposable and fake email addresses, safeguarding your platform from spam and enhancing data quality.
-Ideal for developers seeking to strengthen email verification in their applications.
 
 ## Installation
 
@@ -54,11 +52,12 @@ class User < ApplicationRecord
   validates :email, secure_email: true
 end
 ```
+use _**secure_email: true**_
 
-This will secure the email and throw an validation error if it is a spam email or disposal email or temproary email or invalid email.
+Whenever a record being saved with invalid, spam or disposal email or no such email exists, then this will validate that and return validation error.
 
 ### Email Validation Features
-You can validate whether an email domain is legitimate, temporary, or suspicious with a single method:
+You can validate whether an email domain is legitimate, temporary, or suspicious with a single option:
 
 
 ```ruby 
@@ -68,37 +67,16 @@ puts result[:reason]         # => if valid false, then reason.
 
 
 ```
-**OPTIONAL PARAMETER: **
-
-The **verify_by_send**: **true** option in the MailShield gem enables a feature that performs additional verification of the email address using the SMTP protocol. 
-This is to verify even if the domain is legitimate, and we are not sure that the provided email address is present or there is no such email address.
-Here’s a detailed explanation:
 
 
+### Also you can validate whether a given email address is exist in the real world or not .
 ```ruby 
 
-result = MailShield.validate_email('example@example.com', verify_by_send: true)
+ MailShield.email_exists?('example@example.com')
 
-```
-
-
-**What is verify_by_send: true?**
-
-When you set verify_by_send: true, the MailShield gem will attempt to connect to the email domain’s mail server using SMTP (Simple Mail Transfer Protocol) to further verify the validity of the email address. 
-
-This process does not send an actual email but checks if the mail server would accept the email address.
-
-Default to **false** -> refers this particular validaiton wont be occured.
-
-
-### also you can perform this specific validation alone by using verify_address method.
-```ruby 
-
- MailShield.verify_address('example@example.com')
-
-RESULT:
-true
-false
+**RESULT:**
+true // if email exists in real world.
+false // if no such email present in the real world.
   
 ```
 this will verify whether that particular email address is exists or not.
