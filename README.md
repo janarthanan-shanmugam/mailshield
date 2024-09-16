@@ -81,6 +81,26 @@ false // if no such email present in the real world.
 ```
 this will verify whether that particular email address is exists or not.
 
+### Whitelisted domain or Black listed domains on custom configuration
+
+create a initializer file for the mailshield 
+
+```ruby 
+# config/initializers/mailshield.rb
+
+MailShield.configure do |config|
+  # Define a whitelist of allowed email domains
+  config.whitelist = ['example.com', 'trustedsite.org']
+
+  # Define a blacklist of disallowed email domains
+  config.blacklist = ['tempmail.com', 'spamdomain.com']
+end
+
+```
+
+so when you try to save the record, it will validate the black listed as well as white listed domains.
+
+
 ------------------------------------------------------------------------------------------
 
 Feel free to open an issue or submit a pull request on GitHub.
