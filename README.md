@@ -5,10 +5,20 @@
 </p>
 
 (An Advanced protective gem for securing your application from Spam, Disposal, Temporary Emails and validate the legitimacy of the emails.)
+### Problem?
+You are having a big application where daily n **number of users** creating account.
 
+let say im a scammer and i **dont want to create an account with legitimate email address**,so i will go for some websites which will
+provide some **temporary email address or disposal email address** which will be valid of **10 or 20 minutes**,
+using that i will get the OTP and will create an account.
+
+####
+Storing the temproray or disposal email accounts in our database has no values in it, and also that user is not a legitimate one.
+
+How to solve this issue? Here we have **_mailshield_**, we will protect you from all such things.
 ## Description
 
-MailShield is a powerful and flexible email validation gem for Ruby on Rails, designed to protect your applications from **Disposable**, **Temporary**, **fake** 
+MailShield is a powerful and advanced validation/identification gem for Ruby on Rails, designed to protect your applications from **Disposable**, **Temporary**, **fake** , **Spam**
 and **non existance** email addresses. 
 
 It performs DNS record checks along with SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
