@@ -21,7 +21,7 @@ How to solve this issue? Here we have **_mailshield_**, we will protect you from
 MailShield is a powerful and advanced validation/identification gem for Ruby on Rails, designed to protect your applications from **Disposable**, **Temporary**, **fake** , **Spam**
 and **non existance** email addresses. 
 
-It performs DNS record checks along with SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
+It performs DNS, SPF, MF, DMARK,DNSBL  record checks along with SMTP verification to ensure that email addresses are legitimate and secure, helping you maintain the integrity of your user data.
 
 
 **Ensure the authenticity and security of email addresses in your Ruby on Rails applications with MailShield.**
@@ -66,18 +66,34 @@ use _**secure_email: true**_
 
 Whenever a record being saved with invalid, spam or disposal email or no such email exists, then this will validate that and return validation error.
 
+## NUMBER OF VALIDATIONS PERFORMED:
+1. DMARK
+2. SPF
+3. Reverse DNS
+4. DNS blacklisted Domains (DNSBL)
+5. DNS TXT
+6. Spam Domains
+7. Domain Age
+8. Email Existance in the Real world.
+
+all these validations will be performed with short span less 20 ms
+<br>
+## 
+Also you can use our some of seperate methods for performing individual verification aswell like:- 
+1. validate_email (will perform all kind of validation mentioned above)
+2. email_exits? (this will verify whether that particular email address is exists or not.)
+   
+## 
+
 ### Email Validation Features
 You can validate whether an email domain is legitimate, temporary, or suspicious with a single option:
-
 
 ```ruby 
 result = MailShield.validate_email('user@example.com')
 puts result[:valid]          # => true or false
 puts result[:reason]         # => if valid false, then reason.
 
-
 ```
-
 
 ### Also you can validate whether a given email address is exist in the real world or not .
 ```ruby 
@@ -91,7 +107,13 @@ false // if no such email present in the real world.
 ```
 this will verify whether that particular email address is exists or not.
 
-### Whitelisted domain or Black listed domains on custom configuration
+<br>
+
+### Note: All these validations will be performed, by just adding secure_email: true in your model as mentioned above.
+
+## 
+### Custom Configurations / Whitelisted domain or Black listed domains on custom configuration
+Here’s an example of how to configure the MailShield gem with a whitelist and a blacklist:
 
 create a initializer file for the mailshield 
 
@@ -108,8 +130,7 @@ end
 
 ```
 
-so when you try to save the record, it will validate the black listed as well as white listed domains.
-
+so when you try to save the record, it will validate the black listed as well as white listed domains along with other validations.      
 
 ------------------------------------------------------------------------------------------
 
