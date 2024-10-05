@@ -165,6 +165,54 @@ module MailShield
     rescue Resolv::ResolvError
       []
     end
+    
+    require 'resolv'
+    
+    def reverse_dns_lookup(ip_address)
+      begin
+        dns_resolver = Resolv::DNS.new
+        name = dns_resolver.getname(ip_address).to_s
+        return name
+      rescue Resolv::ResolvError
+        return nil
+      end
+    end
+    
+    def get_ip_from_domain(domain)
+      begin
+        ip_address = Resolv.getaddress(domain)
+        return ip_address
+      rescue Resolv::ResolvError
+        return nil
+      end
+    end
+    
+    def validate_email_domain(email)
+      domain = email.split('@').last
+    
+      # Get the IP address of the domain
+      ip_address = get_ip_from_domain(domain)
+      
+      return false unless ip_address
+    
+      # Perform reverse DNS lookup on the IP address
+      reverse_dns_name = reverse_dns_lookup(ip_address)
+    
+      # Check if the reverse DNS name matches the original domain
+      if reverse_dns_name
+        # Check if the domain is part of the reverse DNS name
+        if reverse_dns_name.include?(domain) || reverse_dns_name.split('.').last(2).join('.') == domain
+          puts "Reverse DNS matches the domain. Domain is likely legitimate."
+          return true
+        else
+          puts "Reverse DNS does NOT match the domain. Domain may be suspicious."
+          return false
+        end
+      else
+        puts "Failed to resolve reverse DNS for the IP address. Domain may be invalid."
+        return false
+      end
+    end
 
     # Verify the email address using SMTP
     def smtp_verify_email(email)
