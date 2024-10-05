@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'active_model'
 
 module MailShield
@@ -8,9 +10,9 @@ module MailShield
 
       result = MailShield.validate_email(email)
 
-      unless result[:valid]
-        record.errors.add(:email, result[:issue])
-      end
+      return if result[:valid]
+
+      record.errors.add(:base, result[:reason])
     end
   end
 end
